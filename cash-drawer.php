@@ -1,3 +1,14 @@
+<?php
+session_start();// Start the session or resume existing one
+
+// Check if a specific session variable is set (e.g., user is logged in)
+if (!isset($_SESSION['logout']) || $_SESSION['logout']) {
+    // Redirect to login page or another page
+    header("Location: login.php");
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -116,6 +127,7 @@
   </div>
 
   <script>
+  (async () => {
     /**
      * Sets up the side drawer toggle functionality with open/close events,
      * keyboard accessibility (Escape key), clicking on backdrop and drawer links to close.
@@ -164,39 +176,47 @@
      * Updates displayed Cash Sales and GCash Sales amounts from localStorage transactions.
      * Calculates sums based on payment type and updates text content with currency formatting.
      */
-    function updateSalesAmounts() {
-      const storedTransactions = localStorage.getItem('savedTransactions');
+    async function updateSalesAmounts() {
       let transactions = [];
+      const transactionApiUrl = 'http://localhost/dana/api/transactions.php';
+      
       try {
-        transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
-        if (!Array.isArray(transactions)) transactions = [];
-      } catch {
-        transactions = [];
-      }
+        const response = await fetch(transactionApiUrl);
 
-      let cashTotal = 0;
-      let gcashTotal = 0;
-
-      transactions.forEach((tx) => {
-        if (tx.paymentType && tx.items && Array.isArray(tx.items)) {
-          const txTotal = tx.items.reduce((sum, item) => sum + (item.price || 0), 0);
-          if (tx.paymentType.toLowerCase() === 'gcash') {
-            gcashTotal += txTotal;
-          } else if (tx.paymentType.toLowerCase() === 'cash') {
-            cashTotal += txTotal;
-          }
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
-      });
 
-      const gcashEl = document.getElementById('gcashAmount');
-      const cashEl = document.getElementById('cashAmount');
-      const formatter = new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-      });
+        const data = await response.json();
+        transactions = data;
+        console.log(transactions)
+        
+        let cashTotal = 0;
+        let gcashTotal = 0;
 
-      gcashEl.textContent = formatter.format(gcashTotal);
-      cashEl.textContent = formatter.format(cashTotal);
+        transactions.forEach((tx) => {
+          if (tx.paymentType && tx.items && Array.isArray(tx.items)) {
+            const txTotal = tx.items.reduce((sum, item) => sum + (!item.refunded ? (parseFloat(item.price) || 0) : 0), 0);
+            if (tx.paymentType.toLowerCase() === 'gcash') {
+              gcashTotal += txTotal;
+            } else if (tx.paymentType.toLowerCase() === 'cash') {
+              cashTotal += txTotal;
+            }
+          }
+        });
+
+        const gcashEl = document.getElementById('gcashAmount');
+        const cashEl = document.getElementById('cashAmount');
+        const formatter = new Intl.NumberFormat('en-PH', {
+          style: 'currency',
+          currency: 'PHP',
+        });
+
+        gcashEl.textContent = formatter.format(gcashTotal);
+        cashEl.textContent = formatter.format(cashTotal);
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
 
     // LocalStorage keys for entries
@@ -394,14 +414,15 @@
     /**
      * Initialization: sets up UI, updates amounts and entries after DOM is ready
      */
-    function init() {
+    async function init() {
       setupSideDrawer();
-      updateSalesAmounts();
+      await updateSalesAmounts();
       renderEntries();
     }
 
     // Wait for DOM to load then initialize the app
     document.addEventListener('DOMContentLoaded', init);
+  })();
   </script>
 </body>
 </html>

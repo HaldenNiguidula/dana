@@ -1,3 +1,13 @@
+<?php
+session_start(); // Start the session or resume existing one
+
+// Check if a specific session variable is set (e.g., user is logged in)
+if (!isset($_SESSION['logout']) || $_SESSION['logout']) {
+    // Redirect to login page or another page
+    header("Location: login.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,7 +106,7 @@
   </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     // Key for storing transaction data in localStorage
     const TRANSACTION_STORAGE_KEY = 'savedTransactions';
 
@@ -120,65 +130,28 @@
     let transactions = []; // Array of all transaction objects
     let activeTransaction = null; // Currently selected transaction
     let selectedItemsForRefund = new Set(); // Indices of items selected for refund
+    const transactionApiUrl = 'http://localhost/dana/api/transactions.php';
 
     // Utility: Format number as Philippine Peso currency string
     function formatCurrency(amount) {
       return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
     }
-
-    // Load transactions from localStorage, fallback to empty array if invalid or none
-    function loadTransactions() {
+    async function loadTransactions() {
       try {
-        const stored = localStorage.getItem(TRANSACTION_STORAGE_KEY);
-        if(stored) {
-          const parsed = JSON.parse(stored);
-          if(Array.isArray(parsed)) {
-            parsed.forEach(tx => {
-              if (Array.isArray(tx.items)) {
-                tx.items.forEach(item => {
-                  if(typeof item.refunded !== 'boolean') {
-                    item.refunded = false;
-                  }
-                });
-              }
-            });
-            transactions = parsed;
-            return;
-          }
+        const response = await fetch(transactionApiUrl);
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
-      } catch(e) {
-        console.error('Failed to load transactions from localStorage:', e);
+
+        const data = await response.json();
+        transactions = data;
+        saveTransactions(); // Proceed only after fetch is done
+      } catch (error) {
+        console.error('Error:', error);
       }
-      // If no saved transactions, initialize with sample transactions including paymentType and refunded flag
-      transactions = [
-        {
-          orderNumber: "ORD1001",
-          totalPrice: 1500,
-          paymentType: "Cash",
-          items: [
-            { name: "Item A", price: 500, refunded: false },
-            { name: "Item B", price: 1000, refunded: false }
-          ]
-        },
-        {
-          orderNumber: "ORD1002",
-          totalPrice: 2000,
-          paymentType: "GCash",
-          items: [
-            { name: "Item C", price: 2000, refunded: false }
-          ]
-        },
-        {
-          orderNumber: "ORD1003",
-          totalPrice: 750,
-          paymentType: "Cash",
-          items: [
-            { name: "Item D", price: 750, refunded: false }
-          ]
-        }
-      ];
-      saveTransactions();
     }
+
 
     // Render transaction list without search filter (search feature removed)
     function renderTransactionList() {
@@ -269,7 +242,7 @@
 
       const totalActivePrice = activeTransaction.items
         .filter(item => !item.refunded)
-        .reduce((sum, item) => sum + (item.price || 0), 0);
+        .reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
 
       totalPriceEl.textContent = formatCurrency(totalActivePrice);
 
@@ -409,6 +382,15 @@
         .filter(item => !item.refunded)
         .reduce((sum, item) => sum + (item.price || 0), 0);
 
+      console.log({ activeTransaction })
+      fetch(transactionApiUrl, {
+        method: "PUT",
+        body: JSON.stringify(activeTransaction),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8"
+        }
+      });
+
       const allRefunded = activeTransaction.items.every(item => item.refunded);
       if(allRefunded) {
         const idx = transactions.indexOf(activeTransaction);
@@ -423,7 +405,6 @@
         const entryDiv = document.querySelector(`.transaction-entry[data-tx-index="${index}"]`);
         if(entryDiv) selectTransaction(index, entryDiv);
       }
-
       saveTransactions();
     });
 
@@ -464,7 +445,7 @@
     drawerBackdrop.addEventListener('click', closeDrawer);
 
     // Initial load: fetch transactions from storage and render the initial list
-    loadTransactions();
+    await loadTransactions();
     renderTransactionList();
   });
 </script>

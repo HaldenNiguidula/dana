@@ -23,6 +23,7 @@ if ($result->num_rows === 1) {
   if (password_verify($pass, $user['password'])) {
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['email'] = $email;
+    $_SESSION['logout'] = false;
     header("Location: Admin.php");
     exit;
   } else {

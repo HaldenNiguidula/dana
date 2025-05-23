@@ -1,3 +1,16 @@
+<?php
+session_start(); // Start the session or resume existing one
+
+// Check if a specific session variable is set (e.g., user is logged in)
+if (!isset($_SESSION['logout']) || $_SESSION['logout']) {
+    // Redirect to login page or another page
+    header("Location: login.php");
+    exit();
+}
+
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -137,7 +150,9 @@
 
   let total = 0;
   const orders = {};
+  
   let orderNumberCount = 0;
+  const transactionApiUrl = 'http://localhost/dana/api/transactions.php';
 
   const defaultItems = [
     { id: 'a1', name: "Cafe Americano", price: 120, category: 'a' },
@@ -166,45 +181,44 @@
     'c': document.getElementById('items-c'),
     'd': document.getElementById('items-d')
   };
+  const productApiUrl = 'http://localhost/dana/api/products.php';
 
   function loadAndRenderItems() {
-    let stored = null;
-    try {
-      stored = localStorage.getItem('menuItems');
-    } catch (e) {
-      console.error('Error reading localStorage menuItems', e);
-    }
     let items = [];
-    if (stored) {
-      try {
-        items = JSON.parse(stored);
-        if (!Array.isArray(items)) throw new Error('Invalid menuItems format');
-      } catch {
-        items = [...defaultItems];
-      }
-    } else {
-      items = [...defaultItems];
-    }
-
-    Object.values(categoryContainers).forEach(container => container.innerHTML = '');
-
-    items.forEach(item => {
-      if (!categoryContainers[item.category]) return;
-      const box = document.createElement('div');
-      box.className = 'item-box';
-      box.setAttribute('tabindex', '0');
-      box.setAttribute('data-name', item.name);
-      box.setAttribute('data-price', item.price.toFixed(2));
-      box.innerHTML = `<div><strong>${item.name}</strong></div><div>₱${item.price.toFixed(2)}</div>`;
-      box.addEventListener('click', () => addItemToOrder(item.name));
-      box.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          addItemToOrder(item.name);
+    // Make a GET request
+    fetch(productApiUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
+        return response.json();
+      })
+      .then(data => {
+        items = data;
+        
+        Object.values(categoryContainers).forEach(container => container.innerHTML = '');
+
+        items.forEach(item => {
+          if (!categoryContainers[item.category]) return;
+          const box = document.createElement('div');
+          box.className = 'item-box';
+          box.setAttribute('tabindex', '0');
+          box.setAttribute('data-name', item.name);
+          box.setAttribute('data-price', parseFloat(item.price).toFixed(2));
+          box.innerHTML = `<div><strong>${item.name}</strong></div><div>₱${parseFloat(item.price).toFixed(2)}</div>`;
+          box.addEventListener('click', () => addItemToOrder(item.name));
+          box.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              addItemToOrder(item.name);
+            }
+          });
+          categoryContainers[item.category].appendChild(box);
+        });
+      })
+      .catch(error => {
+        console.error('Error:', error);
       });
-      categoryContainers[item.category].appendChild(box);
-    });
   }
 
   function addItemToOrder(itemName) {
@@ -246,8 +260,8 @@
       const item = orders[itemName];
       if (item.quantity > 1) {
         item.quantity--;
-        item.totalPrice -= item.price;
-        total -= item.price;
+        item.totalPrice -= parseFloat(item.price);
+        total -= parseFloat(item.price);
         updateOrderItem(itemName);
         updateTotal();
       } else {
@@ -268,8 +282,8 @@
     plusBtn.onclick = () => {
       const item = orders[itemName];
       item.quantity++;
-      item.totalPrice += item.price;
-      total += item.price;
+      item.totalPrice += parseFloat(item.price);
+      total += parseFloat(item.price);
       updateOrderItem(itemName);
       updateTotal();
     };
@@ -377,10 +391,10 @@
         totalPrice: orders[key].totalPrice
       });
     }
-
+    
+    const orderNumber = generateOrderNumber();
     if (method === 'cash') {
       // No cash input, just confirm payment
-      const orderNumber = generateOrderNumber();
       alert(`Cash payment confirmed at counter.\nOrder Type: ${orderType}\nYour order number is: ${orderNumber}`);
       saveTransaction({
         orderNumber,
@@ -390,7 +404,6 @@
         paymentType: method
       });
     } else if (method === 'gcash') {
-      const orderNumber = generateOrderNumber();
       alert(`GCash payment recorded. Thank you!\nOrder Type: ${orderType}\nYour order number is: ${orderNumber}`);
       saveTransaction({
         orderNumber,
@@ -400,6 +413,21 @@
         paymentType: method
       });
     }
+      
+    fetch(transactionApiUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        order_number: orderNumber,
+        total_price: total,
+        order_type: orderType,
+        payment_type: method,
+        items: itemsArray,
+        source: 'Customer'
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8"
+      }
+    });
     closePaymentModal();
     clearOrders();
   }

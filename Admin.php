@@ -1,3 +1,13 @@
+<?php
+session_start(); // Start the session or resume existing one
+
+// Check if a specific session variable is set (e.g., user is logged in)
+if (!isset($_SESSION['logout']) || $_SESSION['logout']) {
+    // Redirect to login page or another page
+    header("Location: login.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -158,9 +168,12 @@
     };
     let currentCategory = 'a';
     let items = [];
+    let deleteItems = [];
     const orders = {};
     let total = 0;
     let orderNumberCount = 0;
+    const productApiUrl = 'http://localhost/dana/api/products.php';
+    const transactionApiUrl = 'http://localhost/dana/api/transactions.php';
 
     // Transaction storage key
     const TRANSACTION_STORAGE_KEY = 'savedTransactions';
@@ -176,18 +189,20 @@
     };
 
     function loadItems() {
-      // Load menu items from localStorage or use default items
-      const stored = localStorage.getItem('menuItems');
-      if (stored) {
-        try {
-          items = JSON.parse(stored);
-          if (!Array.isArray(items)) throw new Error();
-        } catch(e) {
-          items = [...defaultItems];
-        }
-      } else {
-        items = [...defaultItems];
-      }
+      // Make a GET request
+      fetch(productApiUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          items = data;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
     }
     function saveItems() {
       // Save current menu items to localStorage
@@ -225,9 +240,9 @@
         box.className = 'item-box';
         box.setAttribute('data-id', item.id);
         box.setAttribute('data-name', item.name);
-        box.setAttribute('data-price', item.price.toFixed(2));
+        box.setAttribute('data-price', parseFloat(item.price).toFixed(2));
         box.tabIndex = 0;
-        box.innerHTML = `<div><strong>${item.name}</strong></div><div>₱${item.price.toFixed(2)}</div>`;
+        box.innerHTML = `<div><strong>${item.name}</strong></div><div>₱${parseFloat(item.price).toFixed(2)}</div>`;
         box.addEventListener('click', () => addItemToOrder(item.id));
         box.addEventListener('keydown', e => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -244,17 +259,17 @@
       if (!item) return;
       if (orders[id]) {
         orders[id].quantity++;
-        orders[id].totalPrice += item.price;
+        orders[id].totalPrice += parseFloat(item.price);
         updateOrderItem(id);
       } else {
         orders[id] = {
           quantity: 1,
-          price: item.price,
-          totalPrice: item.price
+          price: parseFloat(item.price),
+          totalPrice: parseFloat(item.price)
         };
         addNewOrderItem(id);
       }
-      total += item.price;
+      total += parseFloat(item.price);
       updateTotal();
     }
     function addNewOrderItem(id) {
@@ -279,8 +294,8 @@
       minusBtn.onclick = () => {
         if(item.quantity > 1) {
           item.quantity--;
-          item.totalPrice -= item.price;
-          total -= item.price;
+          item.totalPrice -= parseFloat(item.price);
+          total -= parseFloat(item.price);
           updateOrderItem(id);
           updateTotal();
         } else {
@@ -300,8 +315,8 @@
       plusBtn.title = "Increase quantity";
       plusBtn.onclick = () => {
         item.quantity++;
-        item.totalPrice += item.price;
-        total += item.price;
+        item.totalPrice += parseFloat(item.price);
+        total += parseFloat(item.price);
         updateOrderItem(id);
         updateTotal();
       };
@@ -409,7 +424,7 @@
         modal.style.display = 'none';
       });
       addBtn.addEventListener('click', () => {
-        addManageItemRow({ id: generateId(), name: '', price: 0, category: 'a' }, true);
+        addManageItemRow({ id: null, name: '', price: 0, category: 'a' }, true);
       });
       saveBtn.addEventListener('click', () => {
         const updatedItems = [];
@@ -433,10 +448,33 @@
             valid = false;
             return;
           }
-          updatedItems.push({ id, name, price, category });
+          deleteItems.forEach(element => {
+            fetch(productApiUrl + "?id=" + element, {
+              method: "DELETE",
+              headers: {
+                "Content-type": "application/json; charset=UTF-8"
+              }
+            });
+          });
+          if (id !== 'null') {
+            fetch(productApiUrl + "?id=" + id, {
+              method: "PUT",
+              body: JSON.stringify({ name, price, category }),
+              headers: {
+                "Content-type": "application/json; charset=UTF-8"
+              }
+            });
+          } else {
+            fetch(productApiUrl, {
+              method: "POST",
+              body: JSON.stringify({ name, price, category }),
+              headers: {
+                "Content-type": "application/json; charset=UTF-8"
+              }
+            });
+          }
         });
         if(!valid) return;
-        items = updatedItems;
         saveItems();
         modal.style.display = 'none';
         renderItemsGrid();
@@ -470,7 +508,7 @@
       priceInput.className = 'price-input';
       priceInput.min = 0;
       priceInput.step = 0.01;
-      priceInput.value = item.price;
+      priceInput.value = parseFloat(item.price);
       priceInput.placeholder = 'Price';
       priceInput.setAttribute('aria-label', 'Price');
 
@@ -498,6 +536,9 @@
       deleteBtn.title = "Delete Item";
       deleteBtn.textContent = '🗑️';
       deleteBtn.addEventListener('click', () => {
+        if (item.id) {
+          deleteItems.push(item.id);
+        }
         row.remove();
       });
 
@@ -613,6 +654,21 @@
         orderType: orderType,
         orderNumber: generateOrderNumber()
       };
+      
+      fetch(transactionApiUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          order_number: transaction.orderNumber,
+          total_price: transaction.totalPrice,
+          order_type: transaction.orderType,
+          payment_type: transaction.paymentType,
+          items: transaction.items,
+          source: 'Admin'
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8"
+        }
+      });
 
       let savedTransactions = [];
       try {

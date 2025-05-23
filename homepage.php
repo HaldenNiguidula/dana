@@ -1,3 +1,8 @@
+
+<?php
+  session_start();
+  $_SESSION['logout'] = true;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
