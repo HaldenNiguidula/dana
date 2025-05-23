@@ -1,0 +1,503 @@
+/* Import Montserrat font family for modern, clean typography */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+/* Global box-sizing to include padding/border in element width/height calculations */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Base body styles: font, background, text color, full viewport height, flex layout */
+body {
+  margin: 0;
+  font-family: 'Montserrat', Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  height: 100vh;
+  overflow: hidden; /* prevent scrolling for layout */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Topbar styling: full width header with background color and shadow */
+.topbar {
+  width: 100vw;
+  background-color: #D0AC77;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  font-weight: 700;
+  color: #3a2a00;
+  box-shadow: 0 2px 6px rgba(255 187 51 / 0.25);
+  flex-shrink: 0;
+}
+
+/* Flex containers inside topbar for left and right sections */
+.left-header,
+.right-header {
+  display: flex;
+  align-items: center;
+}
+
+/* Hamburger menu icon styles */
+.menu-icon {
+  font-size: 22px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+/* Hover effect for menu icon */
+.menu-icon:hover {
+  color: #a97200;
+}
+
+/* Page title styling */
+.title {
+  font-size: 1.25rem;
+  user-select: none;
+  margin-left: 8px;
+}
+
+/* Container for search input within topbar */
+.search-container {
+  position: relative;
+  margin-left: 15px;
+}
+
+/* Search input box style */
+.search-input {
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  outline-offset: 2px;
+  outline-color: #ffbb33;
+  width: 300px;
+  max-width: 60vw;
+}
+
+/* Search input placeholder text style */
+.search-input::placeholder {
+  color: #aaa;
+  font-style: italic;
+}
+
+/* Search icon styling with hover effect */
+.search-icon {
+  font-size: 22px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s ease;
+  margin-left: 8px;
+}
+
+.search-icon:hover {
+  color: #a97200;
+}
+
+/* Logo image size and disable user select */
+.logo {
+  height: 32px;
+  width: auto;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Side drawer panel that slides in from the left */
+#side-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  background-color: #FFD483;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.3);
+  transform: translateX(-100%); /* hidden by default */
+  transition: transform 0.3s ease;
+  z-index: 1500;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Side drawer visible state */
+#side-drawer.open {
+  transform: translateX(0);
+}
+
+/* Main navigation inside side drawer, vertical column with spacing */
+#side-drawer nav.main-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-weight: 600;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* Links inside main nav with padding, no text decoration, hover styles */
+#side-drawer nav.main-nav a {
+  color: #333;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+}
+
+/* Hover background and text color for main nav links */
+#side-drawer nav.main-nav a:hover {
+  background-color: #e6b74f;
+  color: black;
+}
+
+/* Bottom navigation in side drawer with top border and spacing */
+#side-drawer nav.bottom-nav {
+  font-weight: 600;
+  margin-top: auto;
+  border-top: 1px solid #b37700;
+  padding-top: 12px;
+}
+
+/* Log out link style distinct with red color and bold */
+#side-drawer nav.bottom-nav a {
+  color: #b30000;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  font-weight: 700;
+}
+
+/* Hover styles for logout link */
+#side-drawer nav.bottom-nav a:hover {
+  background-color: #cc0000;
+  color: white;
+}
+
+/* Close button for side drawer styling */
+#close-drawer {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  color: #333;
+  user-select: none;
+  font-weight: bold;
+}
+
+/* Hover color change for close button */
+#close-drawer:hover {
+  color: #b37700;
+}
+
+/* Backdrop behind side drawer when open (overlay layer) */
+#drawer-backdrop {
+  display: none; /* hidden initially */
+  position: fixed;
+  top:0; left:0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.3);
+  z-index: 1400;
+}
+
+/* Make backdrop visible */
+#drawer-backdrop.visible {
+  display: block;
+}
+
+/* Main container holding sidebar and details, flex layout horizontal */
+.container {
+  display: flex;
+  flex-grow: 1;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Sidebar styling: 40% width, white background, slight shadow inset */
+.sidebar {
+  width: 40%;
+  border-right: 1px solid #ddd;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset -5px 0 10px -7px rgba(0,0,0,0.1);
+}
+
+/* Transaction list scrollable region */
+.transaction-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+
+/* Each transaction entry styling */
+.transaction-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+/* Hover and focus style for transaction entries */
+.transaction-entry:hover, .transaction-entry:focus {
+  background-color: #fff9e5;
+  outline: none;
+}
+
+/* Active (selected) transaction styling */
+.transaction-entry.active {
+  background-color: rgb(233, 222, 193);
+  font-weight: 700;
+}
+
+/* Bold first span in transaction entry (usually order number) */
+.transaction-entry span:first-child {
+  font-weight: 600;
+}
+
+/* Details section: 60% width with padding and subtle content shadow */
+.details {
+  width: 60%;
+  padding: 30px 40px;
+  background-color: #fffefc;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 4px 0 8px -6px rgba(0,0,0,0.1);
+}
+
+/* Header inside details showing total label and order number */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #7a6a38;
+  letter-spacing: 1.2px;
+}
+
+/* Additional inline style for payment type display */
+.payment-type {
+  font-size: 1rem;
+  color: #555;
+  margin-top: 0.4em;
+  font-weight: 500;
+}
+
+/* Section showing total price and item count */
+.total-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 25px;
+}
+
+/* Large bold total price */
+.total-price {
+  font-size: 36px;
+  font-weight: 800;
+  color: #a57a4c;
+}
+
+/* Item count text styling */
+.items-count {
+  font-size: 20px;
+  font-weight: 700;
+  color: #a57a4c;
+  user-select: none;
+}
+
+/* Box container for the list of items in the transaction */
+.items-box {
+  background-color: #f4f3f0;
+  padding: 25px 30px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  flex-grow: 1;
+  overflow-y: auto;
+  box-shadow: inset 0 3px 10px rgb(0 0 0 / 0.03);
+}
+
+/* Each row for an item inside items box */
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 0;
+  border-bottom: 1px solid #ddd;
+  align-items: center;
+}
+
+/* Remove bottom border from last item */
+.item-row:last-child {
+  border-bottom: none;
+}
+
+/* Style for refund item checkboxes */
+.item-checkbox {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Row for “Select All” checkbox and label above items list */
+.select-all-row {
+  display: flex;
+  align-items: center;
+  padding-bottom: 12px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Checkbox styling for “Select All” */
+.select-all-checkbox {
+  margin-right: 12px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Subtotal row showing subtotal label and amount */
+.subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #8a7b51;
+}
+
+/* Button container with gap between buttons */
+.button-row {
+  display: flex;
+  gap: 15px;
+}
+
+/* General button styles */
+.btn {
+  padding: 16px 24px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.08);
+  transition: background-color 0.3s ease, transform 0.15s ease;
+  user-select: none;
+}
+
+/* Accessibility focus indicator for buttons */
+.btn:focus-visible {
+  outline: 3px solid #ffbb33;
+  outline-offset: 3px;
+}
+
+/* Hover transform effect */
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+/* Disabled buttons styling */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Reprint button color theme */
+.reprint {
+  background-color: #ffbb33;
+  color: #3a2a00;
+}
+
+.reprint:hover {
+  background-color: #dba20a;
+}
+
+/* Refund button color theme */
+.refund {
+  background-color: #a57a4c;
+  color: white;
+}
+
+.refund:hover {
+  background-color: #7a5a27;
+}
+
+/* Responsive styles for smaller screens below 900px width */
+@media (max-width: 900px) {
+  .container {
+    flex-direction: column;
+    height: auto;
+    width: 100vw;
+    border-radius: 0;
+  }
+  .sidebar, .details {
+    width: 100%;
+    height: 50vh;
+    box-shadow: none !important; /* remove shadows for mobile view */
+  }
+  .transaction-list {
+    padding-bottom: 0;
+  }
+  .details {
+    padding: 20px;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 10px;
+  }
+  .left-header,
+  .right-header {
+    width: 100%;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+  }
+  .search-container {
+    flex-grow: 1;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    max-width: none;
+  }
+  .search-input {
+    width: 100%;
+    max-width: none;
+  }
+  .search-icon {
+    margin-left: 0;
+  }
+  .title {
+    margin-left: 0;
+  }
+  /* Additional inline style for payment type display */
+  .payment-type {
+    font-size: 1rem;
+    color: #555;
+    margin-top: 0.4em;
+    font-weight: 500;
+  }
+}
