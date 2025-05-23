@@ -38,7 +38,6 @@
 
       <!-- Drawer Content -->
       <nav class="main-nav">
-          <a href="profile.php">Profile</a>
           <a href="admin-transaction.php">Transaction</a>
           <a href="cash-drawer.php">Cash Drawer</a>
       </nav>

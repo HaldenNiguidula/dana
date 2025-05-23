@@ -82,10 +82,8 @@
 
           <div id="cash-section" aria-live="polite" aria-atomic="true">
             <p>Total Due: ₱<span id="payment-total">0.00</span></p>
-            <label>Received Cash:
-                <input type="number" id="cash-input" min="0" step="0.01" aria-label="Received cash amount"/>
-            </label>
-            <p>Change: ₱<span id="change-amount">0.00</span></p>
+            <p>Cash payment will be handled at the counter.</p>
+            <p>Change will be given if applicable.</p>
           </div>
 
           <div id="gcash-section" class="hidden" aria-live="polite" aria-atomic="true">
@@ -335,9 +333,7 @@
     }
     document.getElementById('payment-modal').style.display = 'flex';
     document.getElementById('payment-total').textContent = total.toFixed(2);
-    document.getElementById('cash-input').value = '';
-    document.getElementById('change-amount').textContent = '0.00';
-    document.getElementById('payment-method').value = 'cash';
+    // No input to reset since cash input removed
     updatePaymentMethodView();
   }
 
@@ -354,11 +350,7 @@
     gcashSection.style.display = method === 'gcash' ? 'block' : 'none';
   }
 
-  document.getElementById('cash-input').addEventListener('input', () => {
-    const received = parseFloat(document.getElementById('cash-input').value);
-    const change = received - total;
-    document.getElementById('change-amount').textContent = change >= 0 ? change.toFixed(2) : "0.00";
-  });
+  // Removed event listener for cash-input since input removed
 
   function getSelectedOrderType() {
     const radios = document.getElementsByName('order-type');
@@ -387,13 +379,9 @@
     }
 
     if (method === 'cash') {
-      const received = parseFloat(document.getElementById('cash-input').value);
-      if (isNaN(received) || received < total) {
-        alert("Insufficient cash.");
-        return;
-      }
+      // No cash input, just confirm payment
       const orderNumber = generateOrderNumber();
-      alert(`Cash payment confirmed. Change: ₱${(received - total).toFixed(2)}\nOrder Type: ${orderType}\nYour order number is: ${orderNumber}`);
+      alert(`Cash payment confirmed at counter.\nOrder Type: ${orderType}\nYour order number is: ${orderNumber}`);
       saveTransaction({
         orderNumber,
         totalPrice: total,
